@@ -2,9 +2,9 @@ export type EntryValue<DataType> = [timestamp: number, data: DataType];
 export type Entries<DataType> = {
   [key: string]: EntryValue<DataType>;
 };
-export type Updates<DataType> = { 
-  entries: Entries<DataType>,
-  deletedKeys: Record<string, number> 
+export type Updates<DataType> = {
+  entries: Entries<DataType>;
+  deletedKeys: Record<string, number>;
 };
 export type EntriesHashFunction = (arg0: string) => string;
 export type ValidationFunction = (key: string, data: any) => boolean;
@@ -54,6 +54,7 @@ export default class Collection<DataType> {
   ) {
     // Validate data (optional, user provides this function)
     if (this.validationFunction && !this.validationFunction(key, data)) {
+      console.warn('Invalid entry:', { key, timestamp, data });
       throw new Error('Invalid entry');
     }
 
@@ -192,18 +193,10 @@ export default class Collection<DataType> {
         if (!isPositiveInteger(timestamp)) {
           return console.warn('Invalid imported deletedKey', key, timestamp);
         }
-        if (this.entries[key]) {
-          console.warn(
-            'Import contains both imported entry and deleted key. Reconciling...',
-            key,
-            this.entries[key],
-            timestamp
-          );
-          try {
-            this.remove(key, timestamp);
-          } catch (err) {}
-        } else {
-          this.deletedKeys[key] = timestamp;
+        try {
+          this.remove(key, timestamp);
+        } catch (err) {
+          console.warn('Invalid imported deleted key', key);
         }
       }
     );
